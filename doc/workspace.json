@@ -1,0 +1,179 @@
+{
+  "configuration" : {
+    "scope" : "SoftwareSystem"
+  },
+  "description" : "Description",
+  "documentation" : {
+    "sections" : [ {
+      "content" : "# tr\nThis is the project summary.\n\n## Here is a sub-heading\n\nThe project defines documentation using markdown (.md) and [structurizr DSL](https://docs.structurizr.com/dsl/docs).\n\n",
+      "format" : "Markdown",
+      "order" : 1,
+      "title" : ""
+    } ]
+  },
+  "id" : 1,
+  "lastModifiedDate" : "2024-08-14T20:24:01Z",
+  "model" : {
+    "people" : [ {
+      "id" : "1",
+      "location" : "Unspecified",
+      "name" : "User",
+      "properties" : {
+        "structurizr.dsl.identifier" : "u"
+      },
+      "relationships" : [ {
+        "description" : "Uses",
+        "destinationId" : "2",
+        "id" : "5",
+        "properties" : {
+          "structurizr.dsl.identifier" : "14fe780b-72e5-4297-a451-45df9fa51bf6"
+        },
+        "sourceId" : "1",
+        "tags" : "Relationship"
+      }, {
+        "description" : "Uses",
+        "destinationId" : "3",
+        "id" : "6",
+        "properties" : {
+          "structurizr.dsl.identifier" : "f9df6664-b999-4b73-8f00-b31d35c45c83"
+        },
+        "sourceId" : "1",
+        "tags" : "Relationship"
+      } ],
+      "tags" : "Element,Person"
+    } ],
+    "properties" : {
+      "structurizr.groupSeparator" : "/"
+    },
+    "softwareSystems" : [ {
+      "documentation" : { },
+      "id" : "2",
+      "location" : "Unspecified",
+      "name" : "Xilica Designer",
+      "properties" : {
+        "structurizr.dsl.identifier" : "xd"
+      },
+      "relationships" : [ {
+        "description" : "HTTPS",
+        "destinationId" : "4",
+        "id" : "7",
+        "properties" : {
+          "structurizr.dsl.identifier" : "c196418f-4c1d-44e0-8ce9-4404e2bf36d6"
+        },
+        "sourceId" : "2",
+        "tags" : "Relationship"
+      } ],
+      "tags" : "Element,Software System"
+    }, {
+      "documentation" : { },
+      "id" : "3",
+      "location" : "Unspecified",
+      "name" : "Xilica Cloud",
+      "properties" : {
+        "structurizr.dsl.identifier" : "xc"
+      },
+      "relationships" : [ {
+        "description" : "HTTPS",
+        "destinationId" : "4",
+        "id" : "8",
+        "properties" : {
+          "structurizr.dsl.identifier" : "a3598939-43b7-419d-b552-c911eaa614d7"
+        },
+        "sourceId" : "3",
+        "tags" : "Relationship"
+      } ],
+      "tags" : "Element,Software System"
+    }, {
+      "documentation" : { },
+      "id" : "4",
+      "location" : "Unspecified",
+      "name" : "testarossa",
+      "properties" : {
+        "structurizr.dsl.identifier" : "tr"
+      },
+      "tags" : "Element,Software System"
+    } ]
+  },
+  "name" : "Name",
+  "properties" : {
+    "structurizr.dsl" : "LyoKICogVGhpcyBpcyBhIGNvbW1lbnQgYmxvY2sKICoKICovCi8vIFRoaXMgaXMgYWxzbyBhIGNvbW1lbnQKd29ya3NwYWNlIHsKICAgICFjb25zdCBDT0RFTkFNRSAidGVzdGFyb3NzYSIKCiAgICAhZG9jcyAuL1JFQURNRS5tZAogICAgIWRvY3MgLi9kb2NzCiAgICAhYWRycyAuL2FkcnMKCiAgICBtb2RlbCB7CiAgICAgICAgcHJvcGVydGllcyB7CiAgICAgICAgICAgICJzdHJ1Y3R1cml6ci5ncm91cFNlcGFyYXRvciIgIi8iCiAgICAgICAgfQoKICAgICAgICAvLyBTeXN0ZW0gQ29tcG9uZW50cy9BY3RvcnMKICAgICAgICB1ID0gcGVyc29uICJVc2VyIgogICAgICAgIHhkID0gc29mdHdhcmVTeXN0ZW0gIlhpbGljYSBEZXNpZ25lciIKICAgICAgICB4YyA9IHNvZnR3YXJlU3lzdGVtICJYaWxpY2EgQ2xvdWQiCiAgICAgICAgdHIgPSBzb2Z0d2FyZVN5c3RlbSAiJHtDT0RFTkFNRX0iIHsKICAgICAgICAgICAgLy8gd2EgPSBjb250YWluZXIgIldlYiBBcHBsaWNhdGlvbiIKICAgICAgICAgICAgLy8gZGIgPSBjb250YWluZXIgIkRhdGFiYXNlIFNjaGVtYSIgewogICAgICAgICAgICAvLyAgICAgIyB0YWcgY29udGFpbmVyIGVsZW1lbnQgdG8gZW5hYmxlIHN0eWxpbmcgbGF0ZXIgCiAgICAgICAgICAgIC8vICAgICB0YWdzICJEYXRhYmFzZSIKICAgICAgICAgICAgLy8gfQogICAgICAgICAgICAvLyBzb20gPSBncm91cCAiU29NIiB7CiAgICAgICAgICAgIC8vICAgICBsaW51eCA9IHNvZnR3YXJlU3lzdGVtICJMaW51eCIKICAgICAgICAgICAgLy8gICAgIGF3ZSA9IHNvZnR3YXJlU3lzdGVtICJBdWRpb1dlYXZlciIKICAgICAgICAgICAgLy8gfQogICAgICAgICAgICAvLyBpbyA9IGdyb3VwICJJTyIKICAgICAgICB9CiAgICAgICAgCiAgICAgICAgLy8gVXNlciBJbnRlcmFjdGlvbnMKICAgICAgICB1IC0+IHhkICJVc2VzIgogICAgICAgIHUgLT4geGMgIlVzZXMiCiAgICAgICAgLy8gU3lzdGVtIEludGVyYWN0aW9ucwogICAgICAgIHhkIC0+IHRyICJIVFRQUyIKICAgICAgICB4YyAtPiB0ciAiSFRUUFMiCiAgICB9CiAgICB2aWV3cyB7CiAgICAgICAgc3lzdGVtQ29udGV4dCB0ciAiU3lzdGVtQ29udGV4dFZpZXciIHsKICAgICAgICAgICAgaW5jbHVkZSAqCiAgICAgICAgICAgIC8vIGF1dG9sYXlvdXQgdGIgIAogICAgICAgIH0KICAgICAgICAvLyBjb250YWluZXIgdHIgIkNvbnRhaW5lclZpZXciIHsKICAgICAgICAvLyAgICAgaW5jbHVkZSAqCiAgICAgICAgLy8gICAgIGF1dG9sYXlvdXQgdGIKICAgICAgICAvLyB9CiAgICAgICAgc3R5bGVzIHsKICAgICAgICAgICAgZWxlbWVudCAiUGVyc29uIiB7CiAgICAgICAgICAgICAgICBjb2xvciAjZmZmZmZmCiAgICAgICAgICAgICAgICBiYWNrZ3JvdW5kICM2NjY2NjYKICAgICAgICAgICAgICAgIGZvbnRTaXplIDIyCiAgICAgICAgICAgICAgICBzaGFwZSBQZXJzb24KICAgICAgICAgICAgfQogICAgICAgICAgICBlbGVtZW50ICJDdXN0b21lciIgewogICAgICAgICAgICAgICAgYmFja2dyb3VuZCAjMDg0MjdiCiAgICAgICAgICAgIH0KICAgICAgICAgICAgZWxlbWVudCAiQmFuayBTdGFmZiIgewogICAgICAgICAgICAgICAgYmFja2dyb3VuZCAjOTk5OTk5CiAgICAgICAgICAgIH0KICAgICAgICAgICAgZWxlbWVudCAiU29mdHdhcmUgU3lzdGVtIiB7CiAgICAgICAgICAgICAgICBiYWNrZ3JvdW5kICMxMTY4YmQKICAgICAgICAgICAgICAgIGNvbG9yICNmZmZmZmYKICAgICAgICAgICAgfQogICAgICAgICAgICBlbGVtZW50ICJFeGlzdGluZyBTeXN0ZW0iIHsKICAgICAgICAgICAgICAgIGJhY2tncm91bmQgIzk5OTk5OQogICAgICAgICAgICAgICAgY29sb3IgI2ZmZmZmZgogICAgICAgICAgICB9CiAgICAgICAgICAgIGVsZW1lbnQgIkNvbnRhaW5lciIgewogICAgICAgICAgICAgICAgYmFja2dyb3VuZCAjNDM4ZGQ1CiAgICAgICAgICAgICAgICBjb2xvciAjZmZmZmZmCiAgICAgICAgICAgIH0KICAgICAgICAgICAgZWxlbWVudCAiV2ViIEJyb3dzZXIiIHsKICAgICAgICAgICAgICAgIHNoYXBlIFdlYkJyb3dzZXIKICAgICAgICAgICAgfQogICAgICAgICAgICBlbGVtZW50ICJNb2JpbGUgQXBwIiB7CiAgICAgICAgICAgICAgICBzaGFwZSBNb2JpbGVEZXZpY2VMYW5kc2NhcGUKICAgICAgICAgICAgfQogICAgICAgICAgICBlbGVtZW50ICJEYXRhYmFzZSIgewogICAgICAgICAgICAgICAgc2hhcGUgQ3lsaW5kZXIKICAgICAgICAgICAgfQogICAgICAgICAgICBlbGVtZW50ICJDb21wb25lbnQiIHsKICAgICAgICAgICAgICAgIGJhY2tncm91bmQgIzg1YmJmMAogICAgICAgICAgICAgICAgY29sb3IgIzAwMDAwMAogICAgICAgICAgICB9CiAgICAgICAgICAgIGVsZW1lbnQgIkZhaWxvdmVyIiB7CiAgICAgICAgICAgICAgICBvcGFjaXR5IDI1CiAgICAgICAgICAgIH0KICAgICAgICB9CiAgICAgICAgIyBzdHlsZXMgewogICAgICAgICMgICAgICMgc2V0cyB0aGUgZm9yZWdyb3VuZCBjb2xvdXIgb2YgYWxsIGVsZW1lbnRzIHRvIHdoaXRlCiAgICAgICAgIyAgICAgZWxlbWVudCAiRWxlbWVudCIgewogICAgICAgICMgICAgICAgICBjb2xvciB3aGl0ZQogICAgICAgICMgICAgIH0KICAgICAgICAjICAgICAjIHNldHMgdGhlIGJhY2tncm91bmQgY29sb3VyIG9mIGFsbCBzb2Z0d2FyZSBzeXN0ZW1zIHRvIGdyZWVuCiAgICAgICAgIyAgICAgZWxlbWVudCAiU29mdHdhcmUgU3lzdGVtIiB7CiAgICAgICAgIyAgICAgICAgIGJhY2tncm91bmQgIzJEODgyRAogICAgICAgICMgICAgIH0KICAgICAgICAjICAgICAjIHNldHMgdGhlIGJhY2tncm91bmQgY29sb3VyIG9mIGFsbCBwZW9wbGUgdG8gYSBkYXJrZXIgZ3JlZW4KICAgICAgICAjICAgICAjIHNldHMgdGhlIHNoYXBlIG9mIGFsbCBwZW9wbGUgdG8gYSBwZXJzb24gc2hhcGUKICAgICAgICAjICAgICBlbGVtZW50ICJQZXJzb24iIHsKICAgICAgICAjICAgICAgICAgYmFja2dyb3VuZCAjMTE2NjExCiAgICAgICAgIyAgICAgICAgIHNoYXBlIHBlcnNvbgogICAgICAgICMgICAgIH0KICAgICAgICAjICAgICAjIG1ha2UgYWxsIGVsZW1lbnRzIHdpdGggIkRhdGFiYXNlIiB0YWcgYSBjeWxpbmRlciBzaGFwZQogICAgICAgICMgICAgIGVsZW1lbnQgIkRhdGFiYXNlIiB7CiAgICAgICAgIyAgICAgICAgIHNoYXBlIGN5bGluZGVyCiAgICAgICAgIyAgICAgfQogICAgICAgICMgICAgICMgbWFrZSBhbGwgY29udGFpbmVycyBsaWdodCBncmVlbgogICAgICAgICMgICAgIGVsZW1lbnQgIkNvbnRhaW5lciIgewogICAgICAgICMgICAgICAgICBiYWNrZ3JvdW5kICM1NWFhNTUKICAgICAgICAjICAgICB9CiAgICAgICAgIyB9CiAgICB9CgogICAgY29uZmlndXJhdGlvbiB7CiAgICAgICAgc2NvcGUgc29mdHdhcmVzeXN0ZW0KICAgIH0KCn0K"
+  },
+  "views" : {
+    "configuration" : {
+      "branding" : { },
+      "lastSavedView" : "SystemContextView",
+      "styles" : {
+        "elements" : [ {
+          "background" : "#666666",
+          "color" : "#ffffff",
+          "fontSize" : 22,
+          "shape" : "Person",
+          "tag" : "Person"
+        }, {
+          "background" : "#08427b",
+          "tag" : "Customer"
+        }, {
+          "background" : "#999999",
+          "tag" : "Bank Staff"
+        }, {
+          "background" : "#1168bd",
+          "color" : "#ffffff",
+          "tag" : "Software System"
+        }, {
+          "background" : "#999999",
+          "color" : "#ffffff",
+          "tag" : "Existing System"
+        }, {
+          "background" : "#438dd5",
+          "color" : "#ffffff",
+          "tag" : "Container"
+        }, {
+          "shape" : "WebBrowser",
+          "tag" : "Web Browser"
+        }, {
+          "shape" : "MobileDeviceLandscape",
+          "tag" : "Mobile App"
+        }, {
+          "shape" : "Cylinder",
+          "tag" : "Database"
+        }, {
+          "background" : "#85bbf0",
+          "color" : "#000000",
+          "tag" : "Component"
+        }, {
+          "opacity" : 25,
+          "tag" : "Failover"
+        } ]
+      },
+      "terminology" : { }
+    },
+    "systemContextViews" : [ {
+      "dimensions" : {
+        "height" : 1300,
+        "width" : 1600
+      },
+      "elements" : [ {
+        "id" : "2",
+        "x" : 199,
+        "y" : 199
+      }, {
+        "id" : "3",
+        "x" : 949,
+        "y" : 199
+      }, {
+        "id" : "4",
+        "x" : 574,
+        "y" : 799
+      } ],
+      "enterpriseBoundaryVisible" : true,
+      "key" : "SystemContextView",
+      "order" : 1,
+      "relationships" : [ {
+        "id" : "7"
+      }, {
+        "id" : "8"
+      } ],
+      "softwareSystemId" : "4"
+    } ]
+  }
+}

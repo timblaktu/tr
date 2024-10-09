@@ -1,0 +1,11 @@
+[Unit]
+Description=Audio Weaver Server
+After=jackd.target
+PartOf=testarossa.target
+
+[Service]
+Type=exec
+ExecStart=echo "starting awe.."
+ExecStopPost=echo "stopped awe.."
+RemainAfterExit=yes
+
