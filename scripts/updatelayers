@@ -1,0 +1,83 @@
+#!/bin/sh
+# Find layers within checkout and inject accordingly into kas config
+#
+#   - This script must be run after kas checkout.
+#   - execute this entire script inside the container, call KAS shell .yml -c script form Makefile
+#   - This can be easily done after the checkout operation, since then we can
+#     scrape all layer files with `kas shell find /work -name layer.conf`.
+#
+# References
+#   - https://docs.yoctoproject.org/dev/dev-manual/layers.html
+#   - https://layers.openembedded.org/layerindex/branch/master/layers
+#
+# Dependencies
+#   - install jq from https://github.com/jqlang/jq/releases/latest
+#   - install yq from https://github.com/mikefarah/yq/releases/latest
+set -e
+
+# Enter work dir and load generated env
+WORK_ROOT=/work                      # root path of working tree / volume
+cd $WORK_ROOT
+. .env
+hdr "Entered $0"
+
+WORK_SRC_ROOT=${WORK_ROOT}/sources   # root path of source checkout
+TARGET_LEAF_PATH="/conf/layer.conf"  # leaf path to find and strip
+KAS_YML=${WORK_ROOT}/${BSP_YML}      # Single flattened (gen) kas config
+
+printf "find/printing layer config paths (**%s) relative to working tree root (%s)...\n" \
+    "$TARGET_LEAF_PATH" "$WORK_SRC_ROOT" 
+cd "$WORK_SRC_ROOT"  
+REPO_AND_LAYER_PATHS="$(find -path "*$TARGET_LEAF_PATH" -exec bash -c \
+    "sed 's/.\/\(.*\)\/conf\/layer.conf/\1/'<<<{}" \;)"
+
+# KAS_TMP=$(mktemp --suffix KAS_YML) 
+KAS_TMP=${KAS_YML/.yml/.layers.yml}
+cp "$KAS_YML" "$KAS_TMP"
+
+function should_exclude_layer_path() {
+    exclusions=( bitbake/lib/layerindexlib/tests
+               )
+    for exclusion_regex in ${exclusions[@]}; do
+        # printf "Testing exclusion %s against layer path %s\n" "$exclusion_regex" "$1"
+        if echo "$1" | grep -Eq $exclusion_regex; then
+            printf "Excluding layer %s matching pattern '%s'\n" "$1" "$exclusion_regex"
+            return 0
+        fi
+    done
+    return 1
+}
+
+for REPO_LAYER_PATH in $REPO_AND_LAYER_PATHS; do
+    export REPO_NAME=${REPO_LAYER_PATH%%/*}
+    export LAYER_REL_PATH=${REPO_LAYER_PATH#*/}
+    export LAYER_NAME=${LAYER_REL_PATH##*/}
+    if ! should_exclude_layer_path $REPO_LAYER_PATH; then
+        printf "%s: Injecting layer '%s' with rel path %s into repo '%s'...\n" \
+            "$REPO_LAYER_PATH" "$LAYER_NAME" "$LAYER_REL_PATH" "$REPO_NAME"
+        # Insert '.' for layer of same name as repo - repo itself can be a layer
+        if [ "$LAYER_REL_PATH" == "$REPO_NAME" ]; then
+            export LAYER_NAME='.'
+            export LAYER_REL_PATH='.'
+        fi
+        yq -i '.repos[env(REPO_NAME)].layers[env(LAYER_REL_PATH)] = "" | 
+            .repos[env(REPO_NAME)].layers[env(LAYER_REL_PATH)] tag="!!null"' $KAS_TMP
+    fi
+done 
+hdr "Generated KAS Configuration YAML File
+${KAS_TMP}"
+yq '.' "$KAS_TMP"
+
+hdr "Validating generated layers..."
+# Walk through repos, cross-referencing layers in yaml vs layers in 
+# respective bblayers.conf in source checkout
+for REPO_LAYER_PATH in $REPO_AND_LAYER_PATHS; do
+    export REPO_NAME=${REPO_LAYER_PATH%%/*}
+    export LAYER_REL_PATH=${REPO_LAYER_PATH#*/}
+    export LAYER_NAME=${LAYER_REL_PATH##*/}
+    if ! should_exclude_layer_path $REPO_LAYER_PATH; then
+        printf "Validating layer '%s.%s' at %s...\n" "$REPO_NAME" "$LAYER_NAME" "$REPO_LAYER_PATH"
+    fi     
+done 
+cp -f "$KAS_TMP" "$KAS_YML" 
+hdr "Exiting $0"

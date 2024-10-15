@@ -1,0 +1,20 @@
+#!/bin/bash
+# Build a custom container on top of standard kas container.
+# 
+# We use this container for a variety of tasks in our build system.
+set -e
+. $ROOT_DIR/.env
+hdr "Entered $0"
+cd "$ROOT_DIR"
+docker login ghcr.io # -u USERNAME --password-stdin
+if ! docker buildx build \
+    --build-arg SOURCE_DATE_EPOCH="$(git log -1 --pretty=%ct)" \
+    --output type=docker,rewrite-timestamp=true \
+    --progress=plain \
+    --tag "$KAS_CONTAINER_IMAGE" \
+    --file "$ROOT_DIR"/kas.Dockerfile .
+then
+    echo "Build failed!"
+    return 1
+fi
+hdr "Exiting $0"

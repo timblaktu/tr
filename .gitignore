@@ -1,5 +1,10 @@
+# vim session files
+**/*.vim
+# default location for kas checkout
+sources
+# doc gen tool state
 **/.structurizr
-
+make.env
 
 # Python stuff
 
