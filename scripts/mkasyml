@@ -11,7 +11,7 @@ set -e
 
 . $ROOT_DIR/.env
 _VERBOSITY=1
-hdr "Entered $0"
+verbose && hdr "Entered $0"
 
 # Currently only support a single repo xml manifest, specified in $BSP_XML, overridden by $1
 REPO_MANIFEST_XML=${1:-"$BSP_XML"}
@@ -70,4 +70,4 @@ verbose && echo && jq . "$REPO_MANIFEST_KAS_JSON"
 printf "Converting KAS configuration JSON to YAML (technically unnecessary since kas supports json)...\n" "$REPO_MANIFEST_KAS_JSON"
 yq -p=json -o=yaml "$REPO_MANIFEST_KAS_JSON" > "$REPO_MANIFEST_YML"
 verbose && echo && yq . "$REPO_MANIFEST_YML"
-hdr "Exiting $0"
+verbose && hdr "Exiting $0"

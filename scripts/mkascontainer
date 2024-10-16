@@ -4,7 +4,8 @@
 # We use this container for a variety of tasks in our build system.
 set -e
 . $ROOT_DIR/.env
-hdr "Entered $0"
+_VERBOSITY=1
+verbose && hdr "Entered $0"
 cd "$ROOT_DIR"
 docker login ghcr.io # -u USERNAME --password-stdin
 if ! docker buildx build \
@@ -17,4 +18,4 @@ then
     echo "Build failed!"
     return 1
 fi
-hdr "Exiting $0"
+verbose && hdr "Exiting $0"

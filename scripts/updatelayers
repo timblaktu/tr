@@ -19,7 +19,8 @@ set -e
 WORK_ROOT=/work                      # root path of working tree / volume
 cd $WORK_ROOT
 . .env
-hdr "Entered $0"
+_VERBOSITY=1
+verbose && hdr "Entered $0"
 
 WORK_SRC_ROOT=${WORK_ROOT}/sources   # root path of source checkout
 TARGET_LEAF_PATH="/conf/layer.conf"  # leaf path to find and strip
@@ -80,4 +81,4 @@ for REPO_LAYER_PATH in $REPO_AND_LAYER_PATHS; do
     fi     
 done 
 cp -f "$KAS_TMP" "$KAS_YML" 
-hdr "Exiting $0"
+verbose && hdr "Exiting $0"

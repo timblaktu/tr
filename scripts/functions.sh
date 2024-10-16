@@ -1,8 +1,9 @@
 # utility functions that can be sourced by scripts
 
 function hdr() {
+    local msg="$1"
     printf "================================================================================\n"
-    sed 's/^/=   /' <<<"$1"
+    printf "%s\n" "$msg" | sed 's/^/=   /'
     printf "================================================================================\n"
 }
 function verbose () {
