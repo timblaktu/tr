@@ -17,9 +17,38 @@ This build system prototype is based on GNU make, bash, jq, and yq. It was throw
 
 # Quickstart
 
-Run `make` after cloning and installing [dependencies](#Dependencies) on your host. This will:
+Run `make` after cloning and installing [dependencies](#Dependencies) on your host. 
 
-1. 
+## Explanation
+
+The default make target is `kasbuild`, which is at the top of the dependency graph, i.e. it is dependent on all the other targets:
+
+`kasbuild` --> `kasgenlayers` --> `kascheckout` --> `kasyaml` aka `$(BSP_YML)` --> `kascontainer`
+
+In other words, `make` or `make kasbuild` causes make to walk this graph and run everything in right to left sequence.
+
+Use `make help` for more information about the make targets.
+
+```
+Usage:  make [OPTION] ... [TARGET] ...
+
+                    TARGET  DESCRIPTION
+                     clean  Delete all intermediate files and build output (does not affect bitbake dl/sstate caches)
+              kascontainer  build the kas container defined in kas.Dockerfile
+                   kasyaml  alias for generating the bsp-version-specific kas config yaml file
+build/imx-6.1.36-2.1.0.yml  convert repo manifest (BSP_XML) to a kas configuration yaml file,
+                            sans layers which are updated in kasgenlayers after kascheckout.
+                   kasdump  print the flattened kas configuration, including imports
+               kascheckout  checkout repositories and set up the build directory as specified in the chosen config file
+                            https://kas.readthedocs.io/en/latest/userguide/plugins.html#module-kas.plugins.checkout
+              kasgenlayers  Parse checkout and update repos.layers in kas configuration file
+                  kasbuild  Do the build.
+                            https://kas.readthedocs.io/en/latest/userguide/plugins.html#module-kas.plugins.build
+                  kasshell  Enter shell inside kas container environment.
+                            https://kas.readthedocs.io/en/latest/userguide/plugins.html#module-kas.plugins.shell
+                      help  Displays this auto-generated usage message
+               listtargets  Displays a list of target names
+```
 
 
 ## Dependencies
