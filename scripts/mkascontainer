@@ -5,7 +5,6 @@
 set -e
 . $ROOT_DIR/.env
 _VERBOSITY=1
-#verbose && hdr "Entered $0"
 cd "$ROOT_DIR"
 (set -x; docker login ghcr.io)
 if ! (
@@ -20,4 +19,3 @@ if ! (
     echo "Build failed!"
     return 1
 fi
-#verbose && hdr "Exiting $0"

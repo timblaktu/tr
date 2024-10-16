@@ -20,7 +20,6 @@ WORK_ROOT=/work                      # root path of working tree / volume
 cd $WORK_ROOT
 . .env
 _VERBOSITY=1
-#verbose && hdr "Entered $0"
 
 WORK_SRC_ROOT=${WORK_ROOT}/sources   # root path of source checkout
 TARGET_LEAF_PATH="/conf/layer.conf"  # leaf path to find and strip
@@ -65,11 +64,10 @@ for REPO_LAYER_PATH in $REPO_AND_LAYER_PATHS; do
             .repos[env(REPO_NAME)].layers[env(LAYER_REL_PATH)] tag="!!null"' $KAS_TMP
     fi
 done 
-# hdr "Successfully injected layers into KAS Configuration YAML File
-# ${KAS_TMP}"
-# yq '.' "$KAS_TMP"
+printf "${GREEN}Success${RESET}fully injected layers into final KAS Configuration YAML File %s:\n" "${KAS_TMP}"
+yq '.' "$KAS_TMP"
 
-hdr "Validating generated layers..."
+printf "Validating generated layers...\n"
 # Walk through repos, cross-referencing layers in yaml vs layers in 
 # respective bblayers.conf in source checkout
 for REPO_LAYER_PATH in $REPO_AND_LAYER_PATHS; do
@@ -81,7 +79,4 @@ for REPO_LAYER_PATH in $REPO_AND_LAYER_PATHS; do
     fi     
 done 
 cp -f "$KAS_TMP" "$KAS_YML" 
-hdr "Validated final KAS Configuration YAML File
-${KAS_YML}"
-yq '.' "$KAS_YML"
-#verbose && hdr "Exiting $0"
+printf "${GREEN}Success${RESET}fully validated the final KAS Configuration YAML File %s\n" "${KAS_YML}"
