@@ -1,14 +1,12 @@
 SHELL := bash
+KAS := ./scripts/kas-container --log-level warning
 
 # generate/include/export common vars to make
 ROOT_DIR := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 SCRIPT_DIR := $(ROOT_DIR)scripts
 uninteresting_stdout := $(shell env -i $(SCRIPT_DIR)/mkenv)
 $(info $(uninteresting_stdout))
-# $(info Env File:)
-# $(shell $(cat $(ROOT_DIR)make.env))
 include $(ROOT_DIR)make.env 
-# $(foreach v, $(filter-out $(VARS_OLD) VARS_OLD,$(.VARIABLES)), $(info $(v) = $($(v))))
 .EXPORT_ALL_VARIABLES:
 
 define recipehdr
@@ -35,7 +33,7 @@ kasyaml: $(BSP_YML)  ## alias for generating the bsp-version-specific kas config
 $(BSP_YML): $(BSP_XML) $(BUILD_DIR) scripts/mkasyml kascontainer  ## convert repo manifest (BSP_XML) to a kas configuration yaml file,
 $(BSP_YML): $(BSP_XML) $(BUILD_DIR) scripts/mkasyml kascontainer  ## sans layers which are updated in kasgenlayers after kascheckout.
 	@$(call recipehdr $@)
-	./scripts/mkasyml 2>&1 
+	$(KAS) shell $(BSP_YML) -c "bash --login /work/scripts/mkasyml" 2>&1 
 
 kasdump: $(BSP_YML)  ## print the flattened kas configuration, including imports
 	@$(call recipehdr $@)
@@ -63,21 +61,7 @@ kasshell:  ## https://kas.readthedocs.io/en/latest/userguide/plugins.html#module
 # Generate help output. awk splits lines into target name and comment, prints them,
 # omitting any target names already printed on previous lines. column beautifies.
 help:  ## Displays this auto-generated usage message
-	@printf "\nUsage:  make [OPTION] ... [$${GREEN}TARGET$${RESET}] ...\n\n" \
-		&& grep -Eh '^[^#]*\s##\s' $(MAKEFILE_LIST) \
-		| awk -v GREEN="$${GREEN}" -v RESET="$${RESET}" -F ":.*?## " ' \
-		{ \
-			if (!target_name_already_printed) { target_name_already_printed=foo; } \
-			if (target_name_already_printed == $$1) { target=" "; } else { target=$$1; } \
-			printf "%s%s%s@%s\n", GREEN, target, RESET, $$2; \
-			target_name_already_printed = $$1; \
-		}' \
-		| sed 's/\$$(\([a-zA-Z_][a-zA-Z_0-9]*\))/$${\1}/g' \
-		| envsubst \
-		| column -t -s@ -o'  ' --keep-empty-lines \
-			--table-columns TARGET,DESCRIPTION \
-			--table-right 1 \
-			--table-wrap 2
+	@$(KAS) shell $(BSP_YML) -c "bash --login /work/scripts/mkhelp $(MAKEFILE_LIST)" 2>&1 
 
 listtargets:  ## Displays a list of target names
 	@make -rpn | sed -ne '/^$$/ {n; /^[^ .#][^ ]*:/ {s/:.*$$//;p;}; }' | tr '\n' ' ' 

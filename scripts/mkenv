@@ -44,7 +44,6 @@ BSP_YML=$(realpath --relative-to $ROOT_DIR $BUILD_DIR)/${BSP_XML_FILENAME/%.xml/
 
 GIT_VERSION=$(git describe --dirty --always --tags)
 
-KAS=./scripts/kas-container
 KAS_IMAGE_VERSION=$GIT_VERSION
 KAS_CONTAINER_IMAGE=ghcr.io/timblaktu/tr/xilikas:$KAS_IMAGE_VERSION
 
@@ -52,7 +51,6 @@ KAS_CONTAINER_IMAGE=ghcr.io/timblaktu/tr/xilikas:$KAS_IMAGE_VERSION
 export TERM=screen
 TPUT=/usr/bin/tput
 if $TPUT setaf 1 &> /dev/null; then
-    printf "tput setaf 1 SUCCESSful\n"
     BOLD="$(     $TPUT bold)"
     UNDOBOLD="$( $TPUT dim)"
     STANDOUT="$( $TPUT rmso)"
@@ -81,8 +79,7 @@ if $TPUT setaf 1 &> /dev/null; then
     RESET="$($TPUT sgr0)"
     # printf -v RESET "\033[0;10m"
 else
-    printf "tput setaf 1 ERROR code $?\n"
-    # Disable ANSI color when not a supported case
+    printf "Disabling ANSI color codes since `tput setaf 1` returned ERROR code $?\n"
     STANDOUT=""
     UNDO_STANDOUT=""
     UNDER=""

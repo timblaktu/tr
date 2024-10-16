@@ -9,7 +9,10 @@
 #
 set -e
 
-. $ROOT_DIR/.env
+# Enter work dir and load generated env
+WORK_ROOT=/work                      # root path of working tree / volume
+cd $WORK_ROOT
+. .env
 _VERBOSITY=1
 
 # Currently only support a single repo xml manifest, specified in $BSP_XML, overridden by $1

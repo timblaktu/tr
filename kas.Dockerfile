@@ -12,8 +12,7 @@ FROM ${KAS_IMAGE_FULL_PATH} as kas_base
 
 # Install packages and tools used by kas shell invocations
 ## debian packages
-# RUN apt-get install --no-install-recommends -y \
-#     time tree wget
+RUN sudo apt-get update && sudo apt-get install --no-install-recommends -y bsdmainutils gettext-base tree util-linux wget
 ## manual installs
 RUN mkdir /tmp/bindl \
     && wget https://github.com/jqlang/jq/releases/latest/download/jq-linux-amd64 -O /tmp/bindl/jq \

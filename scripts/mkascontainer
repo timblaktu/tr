@@ -17,5 +17,5 @@ if ! (
     --file "$ROOT_DIR"/kas.Dockerfile .
 ) then
     echo "Build failed!"
-    return 1
+    exit 1
 fi

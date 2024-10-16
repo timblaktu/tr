@@ -67,16 +67,16 @@ done
 printf "${GREEN}Success${RESET}fully injected layers into final KAS Configuration YAML File %s:\n" "${KAS_TMP}"
 yq '.' "$KAS_TMP"
 
-printf "Validating generated layers...\n"
-# Walk through repos, cross-referencing layers in yaml vs layers in 
-# respective bblayers.conf in source checkout
-for REPO_LAYER_PATH in $REPO_AND_LAYER_PATHS; do
-    export REPO_NAME=${REPO_LAYER_PATH%%/*}
-    export LAYER_REL_PATH=${REPO_LAYER_PATH#*/}
-    export LAYER_NAME=${LAYER_REL_PATH##*/}
-    if ! should_exclude_layer_path $REPO_LAYER_PATH; then
-        printf "    Validating layer '%s.%s' at %s...\n" "$REPO_NAME" "$LAYER_NAME" "$REPO_LAYER_PATH"
-    fi     
-done 
+# printf "Validating generated layers...\n"
+# # Walk through repos, cross-referencing layers in yaml vs layers in 
+# # respective bblayers.conf in source checkout
+# for REPO_LAYER_PATH in $REPO_AND_LAYER_PATHS; do
+#     export REPO_NAME=${REPO_LAYER_PATH%%/*}
+#     export LAYER_REL_PATH=${REPO_LAYER_PATH#*/}
+#     export LAYER_NAME=${LAYER_REL_PATH##*/}
+#     if ! should_exclude_layer_path $REPO_LAYER_PATH; then
+#         printf "    Validating layer '%s.%s' at %s...\n" "$REPO_NAME" "$LAYER_NAME" "$REPO_LAYER_PATH"
+#     fi     
+# done 
 cp -f "$KAS_TMP" "$KAS_YML" 
-printf "${GREEN}Success${RESET}fully validated the final KAS Configuration YAML File %s\n" "${KAS_YML}"
+# printf "${GREEN}Success${RESET}fully validated the final KAS Configuration YAML File %s\n" "${KAS_YML}"
