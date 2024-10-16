@@ -1,0 +1,25 @@
+#!/bin/bash
+# Generate help string describing the make targets described in MAKEFILE_LIST arg
+set -e
+# Enter work dir and load generated env
+WORK_ROOT=/work                      # root path of working tree / volume
+cd $WORK_ROOT
+. .env
+_VERBOSITY=1
+MAKEFILE_LIST="$1"
+printf "Usage:  make [OPTION] ... [${GREEN}TARGET${RESET}] ...\n\n" \
+    && grep -Eh '^[^#]*\s##\s' ${MAKEFILE_LIST} \
+    | awk -v GREEN="${GREEN}" -v RESET="${RESET}" -F ":.*?## " ' \
+    { \
+        if (!target_name_already_printed) { target_name_already_printed=foo; } \
+        if (target_name_already_printed == $1) { target=" "; } else { target=$1; } \
+        printf "%s%s%s@%s\n", GREEN, target, RESET, $2; \
+        target_name_already_printed = $1; \
+    }' \
+    | sed 's/\$(\([a-zA-Z_][a-zA-Z_0-9]*\))/${\1}/g' \
+    | envsubst \
+    | column -t -s@ -o'  ' --keep-empty-lines \
+        --table-columns TARGET,DESCRIPTION \
+        --table-right 1 \
+        --table-wrap 2
+
