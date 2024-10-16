@@ -11,7 +11,7 @@ set -e
 
 . $ROOT_DIR/.env
 _VERBOSITY=1
-verbose && hdr "Entered $0"
+# verbose && hdr "Entered $0"
 
 # Currently only support a single repo xml manifest, specified in $BSP_XML, overridden by $1
 REPO_MANIFEST_XML=${1:-"$BSP_XML"}
@@ -20,17 +20,9 @@ export REPO_MANIFEST_YML=$BSP_YML
 export REPO_MANIFEST_JSON="${BSP_YML%.*}.json"
 export REPO_MANIFEST_KAS_JSON="${BSP_YML%.*}.kas.json"
 
-if [ verbose ]; then
-    echo "xml=$REPO_MANIFEST_XML"
-    echo "yml=$REPO_MANIFEST_YML"
-    echo "json=$REPO_MANIFEST_JSON"
-    echo "kas_json=$REPO_MANIFEST_KAS_JSON"
-    tail -n999 "${REPO_MANIFEST_XML}"
-fi
-
 printf "Converting repo XML manifest '%s' to json at '%s'...\n" "${REPO_MANIFEST_XML}" "${REPO_MANIFEST_JSON}"
 yq -p=xml -o=json --xml-attribute-prefix '' --xml-skip-proc-inst "$REPO_MANIFEST_XML" > "$REPO_MANIFEST_JSON"
-verbose && echo && jq . "$REPO_MANIFEST_JSON"
+# verbose && echo && jq . "$REPO_MANIFEST_JSON"
 
 printf "Converting repo JSON manifest '%s' to kas configuration json...\n" "$REPO_MANIFEST_JSON"
 # TODO: is it ok to be discarding the <linkfile> elements in repo xml manifest? 
@@ -65,9 +57,11 @@ jq 'INDEX(.manifest.remote[]; .name) as $remotes |
             }
         ) | from_entries | del(..|nulls)
     }' "$REPO_MANIFEST_JSON" > "$REPO_MANIFEST_KAS_JSON"
-verbose && echo && jq . "$REPO_MANIFEST_KAS_JSON"
+# verbose && echo && jq . "$REPO_MANIFEST_KAS_JSON"
  
 printf "Converting KAS configuration JSON to YAML (technically unnecessary since kas supports json)...\n" "$REPO_MANIFEST_KAS_JSON"
 yq -p=json -o=yaml "$REPO_MANIFEST_KAS_JSON" > "$REPO_MANIFEST_YML"
+
+printf "Converted repo manifest xml %s into kas config yaml %s\n" "$REPO_MANIFEST_XML" "$REPO_MANIFEST_YML"
 verbose && echo && yq . "$REPO_MANIFEST_YML"
-verbose && hdr "Exiting $0"
+# verbose && hdr "Exiting $0"

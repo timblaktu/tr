@@ -4,12 +4,16 @@ SHELL := bash
 ROOT_DIR := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 SCRIPT_DIR := $(ROOT_DIR)scripts
 uninteresting_stdout := $(shell env -i $(SCRIPT_DIR)/mkenv)
-# $(info $(uninteresting_stdout))
+$(info $(uninteresting_stdout))
 # $(info Env File:)
 # $(shell $(cat $(ROOT_DIR)make.env))
 include $(ROOT_DIR)make.env 
 # $(foreach v, $(filter-out $(VARS_OLD) VARS_OLD,$(.VARIABLES)), $(info $(v) = $($(v))))
 .EXPORT_ALL_VARIABLES:
+
+define recipehdr
+    @printf "\n$(BLUE)============================================================================\n==>$(RESET) Running Make Recipe $(YELLOW)$@$(RESET)\n\n"
+endef
 
 .DEFAULT_GOAL := kasbuild
 .PHONY: clean kascontainer kasyaml kasdump kascheckout kasgenlayers kasbuild kasshell
@@ -20,7 +24,8 @@ clean:  ## Delete all intermediate files and build output (does not affect bitba
 	rm -rf ${SOURCE_DIR}
 
 kascontainer: kas.Dockerfile scripts/mkascontainer  ## build the kas container defined in kas.Dockerfile
-	./scripts/mkascontainer
+	@$(call recipehdr $@)
+	./scripts/mkascontainer 2>&1 | sed 's/^/    /'
 
 $(BUILD_DIR):
 	mkdir -p ${BUILD_DIR}
@@ -29,24 +34,30 @@ kasyaml: $(BSP_YML)  ## alias for generating the bsp-version-specific kas config
 
 $(BSP_YML): $(BSP_XML) $(BUILD_DIR) scripts/mkasyml kascontainer  ## convert repo manifest (BSP_XML) to a kas configuration yaml file,
 $(BSP_YML): $(BSP_XML) $(BUILD_DIR) scripts/mkasyml kascontainer  ## sans layers which are updated in kasgenlayers after kascheckout.
-	./scripts/mkasyml
+	@$(call recipehdr $@)
+	./scripts/mkasyml 2>&1 | sed 's/^/    /'
 
 kasdump: $(BSP_YML)  ## print the flattened kas configuration, including imports
-	$(KAS) dump $(BSP_YML)
+	@$(call recipehdr $@)
+	$(KAS) dump $(BSP_YML) 2>&1 | sed 's/^/    /'
 
 kascheckout: $(BSP_YML)  ## checkout repositories and set up the build directory as specified in the chosen config file
 kascheckout: $(BSP_YML)  ## https://kas.readthedocs.io/en/latest/userguide/plugins.html#module-kas.plugins.checkout
-	$(KAS) checkout $(BSP_YML)
+	@$(call recipehdr $@)
+	$(KAS) checkout $(BSP_YML) 2>&1 | sed 's/^/    /'
 
 kasgenlayers: kascheckout  ## Parse checkout and update repos.layers in kas configuration file
-	$(KAS) shell $(BSP_YML) -c "bash --login /work/scripts/updatelayers"
+	@$(call recipehdr $@)
+	$(KAS) shell $(BSP_YML) -c "bash --login /work/scripts/updatelayers" 2>&1 | sed 's/^/    /'
 
 kasbuild: kasgenlayers  ## Do the build.
 kasbuild: kasgenlayers  ## https://kas.readthedocs.io/en/latest/userguide/plugins.html#module-kas.plugins.build
-	$(KAS) --runtime-args "-e TOPDIR=/build" build $(BSP_YML)
+	@$(call recipehdr $@)
+	$(KAS) --runtime-args "-e TOPDIR=/build" build $(BSP_YML) 2>&1 | sed 's/^/    /'
 
 kasshell:  ## Enter shell inside kas container environment.
 kasshell:  ## https://kas.readthedocs.io/en/latest/userguide/plugins.html#module-kas.plugins.shell
+	@$(call recipehdr $@)
 	$(KAS) shell $(BSP_YML)
 
 # Generate help output. awk splits lines into target name and comment, prints them,

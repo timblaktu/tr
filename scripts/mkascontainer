@@ -5,17 +5,19 @@
 set -e
 . $ROOT_DIR/.env
 _VERBOSITY=1
-verbose && hdr "Entered $0"
+#verbose && hdr "Entered $0"
 cd "$ROOT_DIR"
-docker login ghcr.io # -u USERNAME --password-stdin
-if ! docker buildx build \
+(set -x; docker login ghcr.io)
+if ! (
+    set -x; 
+    docker buildx build \
     --build-arg SOURCE_DATE_EPOCH="$(git log -1 --pretty=%ct)" \
     --output type=docker,rewrite-timestamp=true \
     --progress=plain \
     --tag "$KAS_CONTAINER_IMAGE" \
     --file "$ROOT_DIR"/kas.Dockerfile .
-then
+) then
     echo "Build failed!"
     return 1
 fi
-verbose && hdr "Exiting $0"
+#verbose && hdr "Exiting $0"
