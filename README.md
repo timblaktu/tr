@@ -2,7 +2,7 @@
 
 ## Quickstart
 
-Run `make` after cloning and installing [dependencies](#Dependencies) on your host. See [Make Target Explanation](#make-target-explanation) for details.
+Run `make` after cloning and installing [dependencies](#host-dependencies) on your host. See [Make Target Explanation](#make-target-explanation) for details.
 
 ## What?
 This is a prototype implementation for the automatic conversion of an arbitrary yocto project into one that supports the [kas build and configuration system](https://github.com/siemens/kas). We use the Variscite var-som-imx8mp SoM as the prototype's target platform. Variscite provides a [reference BSP: variscite-bsp-platform](https://github.com/varigit/variscite-bsp-platform/tree/mickledore) (supporting mickledore release), and [instructions for building it](https://variwiki.com/index.php?title=Yocto_Build_Release&release=mx8mp-yocto-mickledore-6.1.36_2.1.0-v1.3#Download_Yocto_Mickledore_based_on_NXP_BSP_L6.1.36_2.1.0).
@@ -44,7 +44,9 @@ MACHINE=imx8mp-var-dart DISTRO=fsl-imx-xwayland . var-setup-release.sh build_xwa
 
 ##### 2a. What just happened?
 
-The summary is that **this setup script created the specified `build_xwayland/` dir and generated `conf/bblayers.conf` and `conf/local.conf`. Here is a more detailed breakdown:
+TL;DR; **This setup script created the specified `build_xwayland/` dir and generated `conf/bblayers.conf` and `conf/local.conf`. 
+
+Here is a more detailed breakdown:
 
 1. We just ran `var-setup-release.sh`, which is a symlink to `sources/meta-variscite-sdk-imx/scripts/var-setup-release.sh`. 
 1. `sources/meta-variscite-sdk-imx/` is the path where the repo tool cloned https://github.com/varigit/meta-variscite-sdk-imx. This mapping and the symlink creation was all dictated by these elements in the manifest xml:
@@ -71,6 +73,19 @@ bitbake fsl-image-gui
 
 ### KAS-ification
 
+[`kas checkout`](https://kas.readthedocs.io/en/latest/userguide/plugins.html#module-kas.plugins.checkout) is supposed to take over the "setup env" responsibilities we saw in the scripts above, notably the creation of `conf/bblayers.conf` and `conf/local.conf`. 
+
+The primary difficulty in automatic "KAS-ification" is in gleaning what are the desired contents of `bblayers.conf` and `local.conf`, considering that the de-facto standard for this is currently to run a shell script of unknown origin.
+
+#### ASSumption #1: Upstream maintainers follow all Yocto repos and layer best practices
+
+When this is the case, it is not too wrong of me to assume that I can generate a kas.yaml from a repo xml manifest, i.e. a simple list of repos:
+
+1. Clone the repos.
+1. Parse them for defined layers and indication of which layers are to be included. (THIS IS THE TRICKY/RISKY PART!)
+1. Write the details into kas.yml.
+1. Use kas and henceforth never run a setup script again.
+1. Profits!
 
 # Make Target Explanation
 
