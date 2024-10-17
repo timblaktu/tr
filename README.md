@@ -42,7 +42,7 @@ bash
 MACHINE=imx8mp-var-dart DISTRO=fsl-imx-xwayland . var-setup-release.sh build_xwayland
 ```
 
-##### 2a. What just happened?
+##### What just happened?
 
 TL;DR; **This setup script created the specified `build_xwayland/` dir and generated `conf/bblayers.conf` and `conf/local.conf`. 
 
@@ -66,16 +66,33 @@ Here is a more detailed breakdown:
 
 #### 3. Do the Build
 
+This is typically done monolithically in one command:
+
 ```
-# pwd is still build_xwayland from setup call
 bitbake fsl-image-gui
 ```
 
+Although, I prefer to separate the Pre-Fetch and Build Stages:
+
+```
+bitbake --runall fetch fsl-image-gui
+bitbake fsl-image-gui
+```
+
+##### What just happened?
+
+**TL;DR;** All the standard well-documented yocto/bitbake stuff, i.e. sources fetched, unpacked, patch, configure, build, install, and package.
+
+
 ### KAS-ification
 
-[`kas checkout`](https://kas.readthedocs.io/en/latest/userguide/plugins.html#module-kas.plugins.checkout) is supposed to take over the "setup env" responsibilities we saw in the scripts above, notably the creation of `conf/bblayers.conf` and `conf/local.conf`. 
+[`kas checkout`](https://kas.readthedocs.io/en/latest/userguide/plugins.html#module-kas.plugins.checkout) takes over the responsibilities we saw in [the setup scripts above](#2-Setup-the-Build-Environment), notably the creation of `conf/bblayers.conf` and `conf/local.conf`. **Considering that running shell scripts of unknown origin are the de facto standard for configuring the yocto build environment, it's not surprising that the hardest part of automatic "KAS-ification" is _gleaning what are the desired contents of `bblayers.conf` and `local.conf`_.** 
 
-The primary difficulty in automatic "KAS-ification" is in gleaning what are the desired contents of `bblayers.conf` and `local.conf`, considering that the de-facto standard for this is currently to run a shell script of unknown origin.
+Analogous to the cyclical evolution of software coding trends from _there is only code --> low code --> no code --> "dude, where's my code?"_, "kasification" involves transforming a code-heavy process (writing and running procedural scripts to generate configuration) into a no-code one (only declarative yaml). Until the entire yocto project and all its users adopt kas's fully declarative style for configuration management, converting setup scripts and .conf files is required.*
+
+* it might be easier to perform a one-time conversion requiring the user to complete a traditional build first, but I'm not considering that approach.
+
+..and to do this conversion, some assumption must be made.
 
 #### ASSumption #1: Upstream maintainers follow all Yocto repos and layer best practices
 
@@ -86,6 +103,7 @@ When this is the case, it is not too wrong of me to assume that I can generate a
 1. Write the details into kas.yml.
 1. Use kas and henceforth never run a setup script again.
 1. Profits!
+
 
 # Make Target Explanation
 
