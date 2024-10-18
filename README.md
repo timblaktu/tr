@@ -86,32 +86,34 @@ bitbake fsl-image-gui
 
 ### KAS-ification
 
-[`kas checkout`](https://kas.readthedocs.io/en/latest/userguide/plugins.html#module-kas.plugins.checkout) takes over the responsibilities we saw in [the setup scripts above](#2-Setup-the-Build-Environment), notably the creation of `conf/bblayers.conf` and `conf/local.conf`. **Considering that running shell scripts of unknown origin are the de facto standard for configuring the yocto build environment, it's not surprising that the hardest part of automatic "KAS-ification" is _gleaning what are the desired contents of `bblayers.conf` and `local.conf`_.** 
+[`kas checkout`](https://kas.readthedocs.io/en/latest/userguide/plugins.html#module-kas.plugins.checkout) takes over the responsibilities we saw in [the setup scripts above](#2-Setup-the-Build-Environment), notably the creation of the top-level `conf/bblayers.conf` and `conf/local.conf`. **Considering that running shell scripts of unknown origin are the de facto standard for configuring the yocto build environment, it's not surprising that the hardest part of automatic "KAS-ification" is _gleaning what are the desired contents of `bblayers.conf` and `local.conf`_.** 
 
-Analogous to the cyclical evolution of software coding trends from _there is only code --> low code --> no code --> "dude, where's my code?"_, "kasification" involves transforming a code-heavy process (writing and running procedural scripts to generate configuration) into a no-code one (only declarative yaml). Until the entire yocto project and all its users adopt kas's fully declarative style for configuration management, converting setup scripts and .conf files is required.*
+The most common method for describing/generating configuration at the top-level of a yocto project appears to be a combination of:
 
-* it might be easier to perform a one-time conversion requiring the user to complete a traditional build first, but I'm not considering that approach.
+1. a list of repos (repo manifest or git submodules)
+1. "setup" shell scripts that create and modify the conf/*.conf files, procedurally.
 
-..and to do this conversion, some assumption must be made.
+The only expedient and bulletproof way of doing 2. would be to require the user to first run the setup env script(s) for their machine, distro, target, before performing a conversion to kas yaml. Conversion can then be done on final structured data (conf2yml) which is orders of magnitude simpler and resilient than parsing code int configuration.
 
-#### ASSumption #1: Upstream maintainers follow all Yocto repos and layer best practices
+#### kasification v2.0
 
-When this is the case, it is not too wrong of me to assume that I can generate a kas.yaml from a repo xml manifest, i.e. a simple list of repos:
+Instead of generating repo.layers from parsing the checkout and (very wrongly) assuming all defined layers are to be used, we just run the setup env script and generate the layers based one the generated bblayers.conf (as well as the generated local.conf.). This will be different for every machine, distro, target, bsp, etc, so the user needs to provide the script to run as an arg.
 
-1. Clone the repos.
-1. Parse them for defined layers and indication of which layers are to be included. (THIS IS THE TRICKY/RISKY PART!)
-1. Write the details into kas.yml.
-1. Use kas and henceforth never run a setup script again.
-1. Profits!
+The simplest and most resilient solution is to just automate the whole process, including the source checkout with repo tool or git, in the case of a super-repo with layer submodules. `kas checkout` expects to generate the conf/{local,bblayers}.conf files from the yml config input. 
 
+So the refactored sequence for generating kas config from a repo manifest or git super-repo looks like this:
+
+1. fetch sources, either:
+    1. git clone --recursive <super-repo>
+    1. repo init <manifest-url> && repo sync
+1. execute user-supplied setup-environment script
+1. convert generated conf/*.conf into kas config yaml
+1. use kas
+1. profit!
 
 # Make Target Explanation
 
-The default make target is `kasbuild`, which is at the top of the dependency graph, i.e. it is dependent on all the other targets:
-
-`kasbuild` --> `kasgenlayers` --> `kascheckout` --> `kasyaml` aka `$(BSP_YML)` --> `kascontainer`
-
-In other words, `make` or `make kasbuild` causes make to walk this graph and run everything in right to left sequence.
+The default make target is `kasbuild`, which is at the top of the dependency graph, i.e. it is dependent on all the other targets.
 
 Use `make help` for more information about the make targets.
 
@@ -119,23 +121,7 @@ Use `make help` for more information about the make targets.
 Usage:  make [OPTION] ... [TARGET] ...
 
                     TARGET  DESCRIPTION
-                     clean  Delete all intermediate files and build output (does not affect bitbake dl/sstate caches)
-              kascontainer  build the kas container defined in kas.Dockerfile
-                   kasyaml  alias for generating the bsp-version-specific kas config yaml file
-build/imx-6.1.36-2.1.0.yml  convert repo manifest (BSP_XML) to a kas configuration yaml file,
-                            sans layers which are updated in kasgenlayers after kascheckout.
-                   kasdump  print the flattened kas configuration, including imports
-               kascheckout  checkout repositories and set up the build directory as specified in the chosen config file
-                            https://kas.readthedocs.io/en/latest/userguide/plugins.html#module-kas.plugins.checkout
-              kasgenlayers  Parse checkout and update repos.layers in kas configuration file
-                  kasbuild  Do the build.
-                            https://kas.readthedocs.io/en/latest/userguide/plugins.html#module-kas.plugins.build
-                  kasshell  Enter shell inside kas container environment.
-                            https://kas.readthedocs.io/en/latest/userguide/plugins.html#module-kas.plugins.shell
-                      help  Displays this auto-generated usage message
-               listtargets  Displays a list of target names
 ```
-
 
 # Host Dependencies
 
