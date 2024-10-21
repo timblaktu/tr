@@ -1,4 +1,0 @@
-[submodule "variscite-bsp-platform"]
-	path = variscite-bsp-platform
-	url = https://github.com/timblaktu/variscite-bsp-platform.git
-	branch = mickledore

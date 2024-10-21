@@ -28,20 +28,24 @@ set -o allexport
 
 SCRIPT_DIR=$(realpath "$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)")
 ROOT_DIR=$(realpath "$SCRIPT_DIR/..")
-BUILD_DIR=$ROOT_DIR/build
+BUILD_DIR=build
 SOURCE_DIR=$ROOT_DIR/sources
 
 TIMEFORMAT='%3lR'
 
+REPO_URL=https://github.com/varigit/variscite-bsp-platform.git
+REPO_CONTENT_URL=https://raw.githubusercontent.com/varigit/variscite-bsp-platform
+REPO_BRANCH=mickledore
+REPO_MANIFEST_FILENAME=imx-6.1.36-2.1.0.xml
+# https://github.com/varigit/variscite-bsp-platform/blob/mickledore/imx-6.1.36-2.1.0.xml
+# https://raw.githubusercontent.com/varigit/variscite-bsp-platform/refs/heads/mickledore/imx-6.1.36-2.1.0.xml
+REPO_MANIFEST_URL=${REPO_CONTENT_URL}/refs/heads/$REPO_BRANCH/$REPO_MANIFEST_FILENAME
+SETUP_ENV=scripts/var-setup-release.sh
 MACHINE=imx8mp-var-dart
 DISTRO=fsl-imx-xwayland
 TARGET=fsl-image-gui
-BSP_VERSION=6.1.36-2.1.0
-BSP_XML_FILENAME=imx-${BSP_VERSION}.xml
-BSP_XML=variscite-bsp-platform/${BSP_XML_FILENAME}
-# Apparently kas wants config file with relative path
-BSP_YML=$(realpath --relative-to $ROOT_DIR $BUILD_DIR)/${BSP_XML_FILENAME/%.xml/.yml}
-
+DUMMY_KAS_YML=$BUILD_DIR/dumb-but-valid-kas.yml
+KAS_YML=$BUILD_DIR/kas.yml
 GIT_VERSION=$(git describe --dirty --always --tags)
 
 KAS_IMAGE_VERSION=$GIT_VERSION

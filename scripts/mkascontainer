@@ -11,6 +11,7 @@ if ! (
     set -x; 
     docker buildx build \
     --build-arg SOURCE_DATE_EPOCH="$(git log -1 --pretty=%ct)" \
+    --build-arg KAS_UPSTREAM_LOCAL_BASE_PATH \
     --output type=docker,rewrite-timestamp=true \
     --progress=plain \
     --tag "$KAS_CONTAINER_IMAGE" \
