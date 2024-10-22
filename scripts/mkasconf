@@ -3,20 +3,20 @@
 #        mkasconf - migrate any Yocto project to kas configuration
 # 
 # SYNOPSIS
-#        mkasconf REPO_URL REPO_BRANCH REPO_MANINFEST_FILENAME SETUP_ENV [ARG1 [ARG2]...]
+#        mkasconf REPO_MANIFEST_URL REPO_MANIFEST_BRANCH REPO_MANINFEST_FILENAME SETUP_ENV [ARG1 [ARG2]...]
 # 
 # DESCRIPTION
 #        mkasconf integrates arbitrary Yocto projects into kas-based projects. 
 #
 #        Implementing the following pseudocode:
 # 
-#            1. fetch sources from REPO_URL arg, either:
-#                1. `repo init $REPO_URL && repo sync`
-#                1. `git clone --recurse-submodules $REPO_URL`
+#            1. fetch sources from REPO_MANIFEST_URL  arg, either:
+#                1. `repo init $REPO_MANIFEST_URL && repo sync`
+#                1. `git clone --recurse-submodules $REPO_MANIFEST_URL`
 #            1. execute <setup-environment-script>
 #            1. convert and merge the user configuration (`conf/{local,bblayers,site,auto}.conf`)
 #               into kas config yaml
-#                1. injecting `header.super-repo-origin: "REPO_URL"` in the kas.yml. 
+#                1. injecting `header.super-repo-origin: "REPO_MANIFEST_URL"` in the kas.yml. 
 #                        1. This field uniquely identifies a specific revision of the super-repo.
 # 
 #        The generated `kas.yml` can be used within the normal kas context, 
@@ -35,7 +35,7 @@
 #                super-repo-origin.
 # 
 # ARGS
-#     REPO_URL
+#     REPO_MANIFEST_URL
 #         Specifies either:
 #             - HTTP-GETtable Google repo-tool xml manifest file defining all layer repositories
 #             - git cloneable super-repository defining layer repositories as submodules
@@ -49,57 +49,43 @@ set -euo pipefail
 # Enter work dir and load generated env
 WORK_ROOT=/work                      # root path of working tree / volume
 cd $WORK_ROOT
+# Sourcing .env was the kiss of death... only if it includes REPO_URL env var! So I renamed it to _REPO_MANIFEST_URL.
 . .env
-printf "$RESET"
 _VERBOSITY=1
 
 if [ $# -lt 4 ]; then
-  printf "ERROR: REPO_URL, REPO_BRANCH, REPO_MANIFEST_FILENAME, and SETUP_ENV arguments are required!\n" && exit 1
+  printf "ERROR: REPO_MANIFEST_URL, REPO_MANIFEST_BRANCH, REPO_MANIFEST_FILENAME, and SETUP_ENV arguments are required!\n" && exit 1
 fi
-REPO_URL="$1"
+_REPO_MANIFEST_URL="$1"
 shift
-REPO_BRANCH="$1"
+_REPO_MANIFEST_BRANCH="$1"
 shift
-REPO_MANIFEST_FILENAME="$1"
+_REPO_MANIFEST_FILENAME="$1"
 shift
 SETUP_ENV=( "$@" )
 
 mkdir -p "$BUILD_DIR"
 cd $BUILD_DIR
 
-REPO_MANIFEST_XML="$REPO_MANIFEST_FILENAME"
-export REPO_MANIFEST_JSON="${REPO_MANIFEST_FILENAME%.*}.json"
-export REPO_MANIFEST_KAS_JSON="${REPO_MANIFEST_FILENAME%.*}.kas.json"
+REPO_MANIFEST_XML="$_REPO_MANIFEST_FILENAME"
+export REPO_MANIFEST_JSON="${_REPO_MANIFEST_FILENAME%.*}.json"
+export REPO_MANIFEST_KAS_JSON="${_REPO_MANIFEST_FILENAME%.*}.kas.json"
 export KAS_YML=kas.yml
 
-git config --global --add safe.directory '*'
-git config --global color.ui true
-git config --global user.email flip@flibbertyjibbets.com
-git config --global user.name "Flip Flippy"
-
-if [ "${REPO_MANIFEST_FILENAME##*.}" == "xml" ]; then
-    WGET_LOG=$(mktemp --suffix wget_log)
-    printf "Testing fetch of repo manifest url %s...\n" "$REPO_MANIFEST_URL"
-    if ! (set -x; wget "$REPO_MANIFEST_URL" -q -o $WGET_LOG -O "$REPO_MANIFEST_XML".downloaded); then
-        printf "ERROR: Could't wget %s! Exit code %s  LogFile:\n%s" "$REPO_URL" "$?" "$(cat $WGET_LOG)" && exit 1
-    fi
-    # Docs: https://source.android.com/docs/setup/reference/repo#init
+if [ "${_REPO_MANIFEST_FILENAME##*.}" == "xml" ]; then
+    # Use Repo Tool to Fetch Sources
+    #   - Reference: https://source.android.com/docs/setup/reference/repo#init
     printf "Initializing %s/.repo with manifest %s on %s branch in repo %s..\n" "$(pwd)" \
-        "$REPO_MANIFEST_FILENAME" "$REPO_BRANCH" "$REPO_URL"
-    cat "$REPO_MANIFEST_XML".downloaded
-    rm -rf .repo .git
-    id
-    set -x
-    git config --global --list
-    git config --list --show-origin
-    repo --trace init -u $REPO_URL -b $REPO_BRANCH -m $REPO_MANIFEST_FILENAME
+        "$_REPO_MANIFEST_FILENAME" "$_REPO_MANIFEST_BRANCH" "$_REPO_MANIFEST_URL"
+    repo --trace init -v -u $_REPO_MANIFEST_URL -b $_REPO_MANIFEST_BRANCH -m $_REPO_MANIFEST_FILENAME
     printf "Synchronizing repo manifest..\n"
-    repo -trace sync
-    set +x
+    repo --trace sync -v
 else
+    # Use Git Directly (submodules) to Fetch Sources
     printf "ERROR: Git super-repos are NOT YET SUPPORTED.\n" && exit 1
-    # TODO: git clone --recurse-submodules "$REPO_URL"
+    # TODO: git clone --recurse-submodules "$_REPO_MANIFEST_URL"
 fi
+
 
 printf "Setting up Build Environment by executing user-supplied command: '%s'\n" "${SETUP_ENV[*]}"
 "${SETUP_ENV[@]}"

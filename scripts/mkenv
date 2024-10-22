@@ -33,13 +33,14 @@ SOURCE_DIR=$ROOT_DIR/sources
 
 TIMEFORMAT='%3lR'
 
-REPO_URL=https://github.com/varigit/variscite-bsp-platform.git
-REPO_CONTENT_URL=https://raw.githubusercontent.com/varigit/variscite-bsp-platform
-REPO_BRANCH=mickledore
+# Defining REPO_URL here was the kiss of death for running repo within the container!
+#   - So I renamed it here. Still haven't figured out why REPO_URL was problematic.
+#   - It caused the reference "stable" undefined issue
+REPO_MANIFEST_URL=https://github.com/varigit/variscite-bsp-platform.git
+REPO_MANIFEST_BRANCH=mickledore
 REPO_MANIFEST_FILENAME=imx-6.1.36-2.1.0.xml
-# https://github.com/varigit/variscite-bsp-platform/blob/mickledore/imx-6.1.36-2.1.0.xml
-# https://raw.githubusercontent.com/varigit/variscite-bsp-platform/refs/heads/mickledore/imx-6.1.36-2.1.0.xml
-REPO_MANIFEST_URL=${REPO_CONTENT_URL}/refs/heads/$REPO_BRANCH/$REPO_MANIFEST_FILENAME
+# REPO_CONTENT_URL=https://raw.githubusercontent.com/varigit/variscite-bsp-platform
+# REPO_CONTENT_MANIFEST_URL=${REPO_CONTENT_URL}/refs/heads/$REPO_MANIFEST_BRANCH/$REPO_MANIFEST_FILENAME
 SETUP_ENV=scripts/var-setup-release.sh
 MACHINE=imx8mp-var-dart
 DISTRO=fsl-imx-xwayland
@@ -100,6 +101,7 @@ else
     RESET=""
 fi
 unset TPUT
+
 ########################################################
 # Create the make.env file
 #   - For each variable defined in the environment, i.e. all of the above definitions,
@@ -123,10 +125,10 @@ cat << EOF > $ROOT_DIR/.env
 set -o allexport
 
 # Source generated make-compatible env variables
-source make.env
+. make.env
 
 # Source shell library definitions and functions
-source scripts/functions.sh
+. scripts/functions.sh
 
 # disable auto-export shell option
 set +o allexport

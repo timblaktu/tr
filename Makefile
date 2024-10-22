@@ -23,30 +23,30 @@ define recipehdr
 endef
 
 .DEFAULT_GOAL := kasbuild
-.PHONY: clean cleankascontainer kasmenu kasupstreamfiles kascontainer dummykasconf kasconf kasdump kascheckout kasbuild kasshell
+.PHONY: clean kasmenu kasupstreamfiles kascontainer kasconf kasdump kascheckout kasbuild kasshell
 
 clean:  ## Delete all intermediate files and build output (does not affect bitbake dl/sstate caches)
-	rm ${ROOT_DIR}/.env ${ROOT_DIR}/make.env
-	rm -rf ${BUILD_DIR}
-	rm -rf ${SOURCE_DIR}
+	@rm ${ROOT_DIR}/.env ${ROOT_DIR}/make.env
+	@rm -rf ${BUILD_DIR}
+	@rm -rf ${SOURCE_DIR}
 
 make.env:
+	@$(call recipehdr $@)
 	env -i $(SCRIPT_DIR)/mkenv
 
 $(BUILD_DIR):
-	mkdir -p ${BUILD_DIR}
+	@mkdir -p ${BUILD_DIR}
 
 $(KAS_UPSTREAM_LOCAL_BASE_PATH):
-	mkdir -p $(KAS_UPSTREAM_LOCAL_BASE_PATH)
+	@$(call recipehdr $@)
+	@mkdir -p $(KAS_UPSTREAM_LOCAL_BASE_PATH)
 	@printf "Fetching files from kas repository %s into %s..\n" \
 		"$(KAS_UPSTREAM_BASE_URL)" "$(KAS_UPSTREAM_LOCAL_BASE_PATH)"
-	wget -P $(KAS_UPSTREAM_LOCAL_BASE_PATH) $(KAS_UPSTREAM_FILE_URLS) 
-	chmod 755 $(KAS_UPSTREAM_LOCAL_EXEC_PATHS)
+	@wget -q -P $(KAS_UPSTREAM_LOCAL_BASE_PATH) $(KAS_UPSTREAM_FILE_URLS) 
+	@chmod 755 $(KAS_UPSTREAM_LOCAL_EXEC_PATHS)
+	@ls -l $(KAS_UPSTREAM_LOCAL_BASE_PATH) | sed 's/^/    /g'
 
-cleankascontainer: clean kascontainer
-	@$(call recipehdr $@)
-
-kasmenu: cleankascontainer
+kasmenu:
 	@$(call recipehdr $@)
 	$(KAS) menu	$(KAS_UPSTREAM_LOCAL_BASE_PATH)/Kconfig
 
@@ -54,18 +54,12 @@ kascontainer: make.env kas.Dockerfile scripts/mkascontainer $(KAS_UPSTREAM_LOCAL
 	@$(call recipehdr $@)
 	./scripts/mkascontainer 2>&1 
 
-dummykasconf: $(DUMMY_KAS_YML)
-
-$(DUMMY_KAS_YML): $(BUILD_DIR)
-	@$(call recipehdr $@)
-	touch $(DUMMY_KAS_YML) && yq -i '{"header":{"version": 17}}' $(DUMMY_KAS_YML)
-
 kasconf: $(KAS_YML)  ## alias for generating the kas config yaml file by name
 
-$(KAS_YML): $(BUILD_DIR) scripts/mkasconf kascontainer dummykasconf  ## convert a super-repo URL (repo-tool manifest or git super-repo) 
-$(KAS_YML): $(BUILD_DIR) scripts/mkasconf kascontainer dummykasconf  ## to a kas configuration yaml file
+$(KAS_YML): $(BUILD_DIR) scripts/mkasconf kascontainer ## convert a super-repo URL (repo-tool manifest or git super-repo) 
+$(KAS_YML): $(BUILD_DIR) scripts/mkasconf kascontainer ## to a kas configuration yaml file
 	@$(call recipehdr $@)
-	$(KAS) runcmd ./scripts/mkasconf $(REPO_URL) $(REPO_BRANCH) $(REPO_MANIFEST_FILENAME) $(SETUP_ENV) 2>&1
+	$(KAS) runcmd ./scripts/mkasconf $(REPO_MANIFEST_URL) $(REPO_MANIFEST_BRANCH) $(REPO_MANIFEST_FILENAME) $(SETUP_ENV) 2>&1
 
 kasdump: $(KAS_YML)  ## print the flattened kas configuration, including imports
 	@$(call recipehdr $@)
