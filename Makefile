@@ -14,7 +14,7 @@ KAS_UPSTREAM_REL_FILE_PATHS := kas-container container-entrypoint tests/test_men
 KAS_UPSTREAM_FILE_URLS := $(addprefix $(KAS_UPSTREAM_BASE_URL)/, $(KAS_UPSTREAM_REL_FILE_PATHS))
 KAS_UPSTREAM_LOCAL_BASE_PATH := $(BUILD_DIR)/kas-upstream
 KAS_UPSTREAM_LOCAL_EXEC_PATHS := $(addprefix $(KAS_UPSTREAM_LOCAL_BASE_PATH)/, kas-container container-entrypoint)
-KAS := $(KAS_UPSTREAM_LOCAL_BASE_PATH)/kas-container --log-level warning
+KAS := $(KAS_UPSTREAM_LOCAL_BASE_PATH)/kas-container --log-level debug
 
 .EXPORT_ALL_VARIABLES:
 
@@ -23,12 +23,11 @@ define recipehdr
 endef
 
 .DEFAULT_GOAL := kasbuild
-.PHONY: clean kasmenu kasupstreamfiles kascontainer kasconf kasdump kascheckout kasbuild kasshell
+.PHONY: clean kasmenu kascontainer kasconf kasdump kascheckout kasbuild kasshell
 
 clean:  ## Delete all intermediate files and build output (does not affect bitbake dl/sstate caches)
-	@rm ${ROOT_DIR}/.env ${ROOT_DIR}/make.env
-	@rm -rf ${BUILD_DIR}
-	@rm -rf ${SOURCE_DIR}
+	@$(call recipehdr $@)
+	bash -c "rm -rf ./{{,make}.env,$(BUILD_DIR),$(SOURCE_DIR)}"
 
 make.env:
 	@$(call recipehdr $@)
@@ -37,7 +36,8 @@ make.env:
 $(BUILD_DIR):
 	@mkdir -p ${BUILD_DIR}
 
-$(KAS_UPSTREAM_LOCAL_BASE_PATH):
+$(KAS_UPSTREAM_LOCAL_BASE_PATH):  ## fetches files from kas-fork that we're dependent on
+$(KAS_UPSTREAM_LOCAL_BASE_PATH):  ##   (should probably be a git submodule or subtree)
 	@$(call recipehdr $@)
 	@mkdir -p $(KAS_UPSTREAM_LOCAL_BASE_PATH)
 	@printf "Fetching files from kas repository %s into %s..\n" \
@@ -56,10 +56,12 @@ kascontainer: make.env kas.Dockerfile scripts/mkascontainer $(KAS_UPSTREAM_LOCAL
 
 kasconf: $(KAS_YML)  ## alias for generating the kas config yaml file by name
 
-$(KAS_YML): $(BUILD_DIR) scripts/mkasconf kascontainer ## convert a super-repo URL (repo-tool manifest or git super-repo) 
-$(KAS_YML): $(BUILD_DIR) scripts/mkasconf kascontainer ## to a kas configuration yaml file
+$(KAS_YML): $(BUILD_DIR) scripts/mkasconf kascontainer  ## convert a super-repo URL (repo-tool manifest or git super-repo) 
+$(KAS_YML): $(BUILD_DIR) scripts/mkasconf kascontainer  ## to a kas configuration yaml file
 	@$(call recipehdr $@)
-	$(KAS) runcmd ./scripts/mkasconf $(REPO_MANIFEST_URL) $(REPO_MANIFEST_BRANCH) $(REPO_MANIFEST_FILENAME) $(SETUP_ENV) 2>&1
+	# TODO: refactor mkasconf to accept args to differentiate between repo manifest and git super-repo use cases
+	$(KAS) runcmd ./scripts/mkasconf $(REPO_MANIFEST_URL) $(REPO_MANIFEST_BRANCH) $(REPO_MANIFEST_FILENAME) \
+		$(SETUP_ENV_SOURCE) $(SETUP_ENV_BUILD_DIR) $(KAS_YML) 2>&1
 
 kasdump: $(KAS_YML)  ## print the flattened kas configuration, including imports
 	@$(call recipehdr $@)
@@ -78,7 +80,8 @@ kasbuild: kasgenlayers  ## https://kas.readthedocs.io/en/latest/userguide/plugin
 kasshell:  ## Enter shell inside kas container environment.
 kasshell:  ## https://kas.readthedocs.io/en/latest/userguide/plugins.html#module-kas.plugins.shell
 	@$(call recipehdr $@)
-	$(KAS) shell $(KAS_YML)
+	$(KAS) runcmd
+	#$(KAS) shell $(KAS_YML)
 
 # Generate help output. awk splits lines into target name and comment, prints them,
 # omitting any target names already printed on previous lines. column beautifies.

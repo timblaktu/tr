@@ -3,7 +3,7 @@
 #        mkasconf - migrate any Yocto project to kas configuration
 # 
 # SYNOPSIS
-#        mkasconf REPO_MANIFEST_URL REPO_MANIFEST_BRANCH REPO_MANINFEST_FILENAME SETUP_ENV [ARG1 [ARG2]...]
+#        mkasconf REPO_MANIFEST_URL REPO_MANIFEST_BRANCH REPO_MANINFEST_FILENAME SETUP_ENV_SOURCE SETUP_ENV_BUILD_DIR KAS_YML
 # 
 # DESCRIPTION
 #        mkasconf integrates arbitrary Yocto projects into kas-based projects. 
@@ -36,25 +36,42 @@
 # 
 # ARGS
 #     REPO_MANIFEST_URL
-#         Specifies either:
-#             - HTTP-GETtable Google repo-tool xml manifest file defining all layer repositories
-#             - git cloneable super-repository defining layer repositories as submodules
-#     SETUP_ENV [ARG1 [ARG2]...]
-#         Command and args representing the setup-environment script, relative to the 
-#         checkout/sources root, that would be executed when setting up manual yocto 
-#         build environment.
+#         URL of a git repository containing either:
+#             - the Google repo-tool xml manifest file defining all layer repositories, OR
+#             - a super-repository defining layer repositories as submodules
+#         Note:
+#             - This was more generically named REPO_URL, but this caused havoc with repo tool!
+#             - TODO: find a new name without MANIFEST in it
+#
+#     REPO_MANIFEST_BRANCH
+#         Name of git branch to use in REPO_MANIFEST_URL
+#
+#     REPO_MANIFEST_FILENAME
+#         Name of the Google repo-tool xml manifest file to use.
+#         Should be contained in git repo REPO_MANIFEST_URL on branch REPO_MANIFEST_BRANCH.
+#
+#     SETUP_ENV_SOURCE
+#         path of the setup-environment script to source, relative to the top-level build 
+#         dir that this script runs in (not the build dir of the yocto project we're converting)
+#
+#     SETUP_ENV_BUILD_DIR
+#         name of the build subdirectory to use for the yocto project we're converting to kas.
+#
+#     KAS_YML
+#         name for the output kas configuration yaml file
+#
 set -euo pipefail
 
-# TODO: validate workingn dir is correct - should be called from root
-# Enter work dir and load generated env
-WORK_ROOT=/work                      # root path of working tree / volume
-cd $WORK_ROOT
-# Sourcing .env was the kiss of death... only if it includes REPO_URL env var! So I renamed it to _REPO_MANIFEST_URL.
+# Load generated environment
 . .env
 _VERBOSITY=1
+assert_pwd_is_root
 
-if [ $# -lt 4 ]; then
-  printf "ERROR: REPO_MANIFEST_URL, REPO_MANIFEST_BRANCH, REPO_MANIFEST_FILENAME, and SETUP_ENV arguments are required!\n" && exit 1
+# TODO: refactor mkasconf to accept args to differentiate between repo manifest and git super-repo use cases
+if [ $# -lt 5 ]; then
+  printf "ERROR: all 5 arguments are required!\n"
+  printf "       REPO_MANIFEST_URL, REPO_MANIFEST_BRANCH, REPO_MANIFEST_FILENAME, SETUP_ENV_SOURCE, and SETUP_ENV_BUILD_DIR\n"
+  exit 1
 fi
 _REPO_MANIFEST_URL="$1"
 shift
@@ -62,114 +79,164 @@ _REPO_MANIFEST_BRANCH="$1"
 shift
 _REPO_MANIFEST_FILENAME="$1"
 shift
-SETUP_ENV=( "$@" )
+_SETUP_ENV_SOURCE="$1"
+shift
+_SETUP_ENV_BUILD_DIR="$1"
+shift
+_KAS_YML="$1"
+shift
 
 mkdir -p "$BUILD_DIR"
 cd $BUILD_DIR
 
-REPO_MANIFEST_XML="$_REPO_MANIFEST_FILENAME"
-export REPO_MANIFEST_JSON="${_REPO_MANIFEST_FILENAME%.*}.json"
-export REPO_MANIFEST_KAS_JSON="${_REPO_MANIFEST_FILENAME%.*}.kas.json"
-export KAS_YML=kas.yml
-
 if [ "${_REPO_MANIFEST_FILENAME##*.}" == "xml" ]; then
     # Use Repo Tool to Fetch Sources
     #   - Reference: https://source.android.com/docs/setup/reference/repo#init
-    printf "Initializing %s/.repo with manifest %s on %s branch in repo %s..\n" "$(pwd)" \
-        "$_REPO_MANIFEST_FILENAME" "$_REPO_MANIFEST_BRANCH" "$_REPO_MANIFEST_URL"
-    repo --trace init -v -u $_REPO_MANIFEST_URL -b $_REPO_MANIFEST_BRANCH -m $_REPO_MANIFEST_FILENAME
-    printf "Synchronizing repo manifest..\n"
-    repo --trace sync -v
+    step "Initializing $(pwd)/.repo with manifest $_REPO_MANIFEST_FILENAME on $_REPO_MANIFEST_BRANCH branch in repo $_REPO_MANIFEST_URL.."
+    repo init -u $_REPO_MANIFEST_URL -b $_REPO_MANIFEST_BRANCH -m $_REPO_MANIFEST_FILENAME 2>&1 | sed 's/^/    /'
+    step "Synchronizing repo manifest.."
+    repo sync -j$(nproc) 2>&1 | sed 's/^/    /'
+    _REPO_MANIFEST_PATH="$(find $(pwd) -name "$_REPO_MANIFEST_FILENAME")"
 else
     # Use Git Directly (submodules) to Fetch Sources
     printf "ERROR: Git super-repos are NOT YET SUPPORTED.\n" && exit 1
     # TODO: git clone --recurse-submodules "$_REPO_MANIFEST_URL"
 fi
 
+step "Setting up Build Environment by sourcing user-supplied source path ($_SETUP_ENV_SOURCE) and build dir ($_SETUP_ENV_BUILD_DIR)" 
+printf "    Note: To auto-accept Freescale's EULA, ACCEPT_FSL_EULA must be set in local.conf, the env var is not checked by their setup scripts.\n"
+printf "          Also note that values in the conf file must be quoted.\n"
+printf "    Note: Freescale setup scripts refer to undefind variables so we 'set +u' prior to calling them.\n"
+printf " EnvNote: MACHINE=${MACHINE:-undefined}, DISTRO=${DISTRO:-undefined}, TARGET=${TARGET:-undefined}\n"
+# chmod 755 *.sh
+mkdir -p $_SETUP_ENV_BUILD_DIR/conf
+_SETUP_ENV_LOCAL_CONF=$_SETUP_ENV_BUILD_DIR/conf/local.conf
+EULALINE="ACCEPT_FSL_EULA = \"1\""
+if ! grep -q "$EULALINE" $_SETUP_ENV_LOCAL_CONF; then
+    echo "$EULALINE" >> $_SETUP_ENV_LOCAL_CONF
+fi
+{   #echo; tree --noreport $_SETUP_ENV_BUILD_DIR
+    dumpfile $_SETUP_ENV_LOCAL_CONF
+} 2>&1 | sed 's/^/    /'
+set +u
+. $_SETUP_ENV_SOURCE $_SETUP_ENV_BUILD_DIR 2>&1 | sed 's/^/    /'
+# With variscite/NXP-IMX BSP, must also source setup-environment to see exported vars/funcs, despite docs:
+#   https://variwiki.com/index.php?title=Yocto_Build_Release&release=mx8mp-yocto-mickledore-6.1.36_2.1.0-v1.3#Build_XWayland_GUI_demo_image
+# Since this is yocto-standard, there's no harm is sourcing this top-level file always.
+. setup-environment $_SETUP_ENV_BUILD_DIR 
+set -u
+if ! bitbake -h >/dev/null; then
+    fatal "Can't access bitbake on PATH after setting up environment!"
+fi
+printf "setup-environment complete, pwd changed to %s\n" "$(pwd)"
 
-printf "Setting up Build Environment by executing user-supplied command: '%s'\n" "${SETUP_ENV[*]}"
-"${SETUP_ENV[@]}"
+step "Analyzing the user configuration generated by setup-environment script.."
+{   dumpfile conf/local.conf | sed 's/^/    /'
+    dumpfile conf/bblayers.conf | sed 's/^/    /'
+    printf "\nbitbake-layers show-layers:\n"
+    bitbake-layers show-layers 2>&1 \
+        | tee conf/bitbake-layers-show-layers.txt \
+        | sed -E '1,/={20,}.*$/d' | tee ../bb_layers_paths_priorities.txt \
+        | sed 's/^/    /' 
+} 2>&1 | sed 's/^/    /'
 
-printf "TODO: Converting the generated user configuration to kas yml..\n"
-
-printf "TODO: Validating kas yml against build environment..\n"
-
-printf "TODO: Injecting super-repo origin into %s..\n" "$KAS_YML"
-
-#repoxml2kasymlrepos
-
-
-function repoxml2kasymlrepos() {
-    yq -p=xml -o=json --xml-attribute-prefix '' --xml-skip-proc-inst "$REPO_MANIFEST_XML" \
-        | jq 'INDEX(.manifest.remote[]; .name) as $remotes | 
-            { 
-                repos: .manifest.project | map(
-                    { 
-                        "key": .name, 
-                        "value": { 
-                            path: .path, 
-                            url: "\($remotes[.remote].fetch)/\(.name)", 
-                            branch: .upstream,
-                            commit: .revision 
-                        }
-                    }
-                ) | from_entries | del(..|nulls)
-            }' \
-        | yq -p=json -o=yaml "$KAS_YML"
-    printf "${GREEN}SUCCESS${RESET}fully converted repo manifest xml %s into kas config yaml %s\n" "$REPO_MANIFEST_XML" "$KAS_YML"
-    yq . "$KAS_YML"
-}
-
-function kashdr() {
-    echo | yq '
-        { 
-            header: { 
-                version: 17 
-            }, 
-            machine: "imx8mp-var-dart", 
-            distro: "fsl-imx-xwayland", 
-            target: "fsl-image-gui", 
+cd "$ROOT_DIR"
+step "Converting the original repo manifest xml into kas yml.."
+printf "    Re-sourcing project .env, since setup-env clobbered some needed vars\n"
+. .env
+if [ -z ${MACHINE+x} -o -z ${DISTRO+x} -o -z ${TARGET+x} ]; then
+    printf "${RED}ERROR: a required variable is not set!${RESET}\n"
+    printf "${RED}ERROR${RESET}: MACHINE=${MACHINE:-undefined}, DISTRO=${DISTRO:-undefined}, TARGET=${TARGET:-undefined}\n"
+    exit 1
+fi
+yq -p=xml -o=json --xml-attribute-prefix '' --xml-skip-proc-inst "$_REPO_MANIFEST_PATH" \
+    | jq 'INDEX(.manifest.remote[]; .name) as $remotes |
+        {   header: {
+                version: 17
+            },
+            machine: "\($ENV.MACHINE)",
+            distro: "\($ENV.DISTRO)",
+            target: "\($ENV.TARGET)",
             build_system: "openembedded", 
-            env: { 
-                DL_DIR: "/mnt/wsl/internal-4tb-nvme/dl_dir", 
-                SSTATE_DIR: "/mnt/wsl/internal-4tb-nvme/sstate_dir" 
-            }, 
-            local_conf_header: {
-                custom-local-conf: |
-                    # Xilica additions
-                    DL_DIR     = "/mnt/wsl/internal-4tb-nvme/dl_dir"
-                    SSTATE_DIR = "/mnt/wsl/internal-4tb-nvme/sstate_dir"
-                    BB_NUMBER_THREADS = "18"
-                    PARALLEL_MAKE = "-j 12"
-                    # These may have caused fetch/unpack errors?
-                    #BB_GIT_SHALLOW ?= "1"
-                    #BB_GIT_SHALLOW_DEPTH ?= "1"
-                    #BB_GENERATE_SHALLOW_TARBALLS ?= "1"
-                    # Toggle this if/when partitioning the build into Pre-Fetch/Build stages.
-                    # This is a good way to build in early assertion to catch errors.
-                    # A successfully pre-fetched target should build fine without the network.
-                    #BB_NO_NETWORK = "1"
-                    #BBDEBUG
-                    # from local.conf generated by var/imx setup scripts
-                    EXTRA_IMAGE_FEATURES ?= "debug-tweaks"
-                    USER_CLASSES ?= "buildstats"
-                    PATCHRESOLVE = "noop"
-                    BB_DISKMON_DIRS ??= "\
-                        STOPTASKS,${TMPDIR},1G,100K \
-                        STOPTASKS,${DL_DIR},1G,100K \
-                        STOPTASKS,${SSTATE_DIR},1G,100K \
-                        STOPTASKS,/tmp,100M,100K \
-                        HALT,${TMPDIR},100M,1K \
-                        HALT,${DL_DIR},100M,1K \
-                        HALT,${SSTATE_DIR},100M,1K \
-                        HALT,/tmp,10M,1K"
-                    PACKAGECONFIG:append:pn-qemu-system-native = " sdl"
-                    CONF_VERSION = "2"
-                    ACCEPT_FSL_EULA = "1"
-                    PACKAGE_CLASSES = "package_deb"
-            }
-            '
+            env: {
+            },
+            repos: .manifest.project | map(
+                {
+                    "key": .name,
+                    "value": {
+                        path: .path,
+                        url: "\($remotes[.remote].fetch)/\(.name)",
+                        branch: .upstream,
+                        commit: .revision
+                    }
+                }
+            ) | from_entries | del(..|nulls) }' \
+    | yq -p=json -o=yaml > "$_KAS_YML"
+echo "done with first conversion."
+./scripts/updatelayers "$_KAS_YML"
+printf "${GREEN}SUCCESS${RESET}fully converted repo manifest %s into kas config %s\n" \
+    "$_REPO_MANIFEST_PATH" "$_KAS_YML"
+printf "      Note: all layers defined in repo sources are included. Will filter this in next step.\n" \
+verbose && yq -C . "$_KAS_YML"
+
+step "Filtering and Merging generated user configuration into kas yml.."
+rm rfile && touch rfile
+compare_layers() {
+    printf "\n   Comparing layers deduced from the original repo manifest with those generated in the bitbake environment..\n\n"
+    HDRS="\
+    ${CYAN}${UNDER}YML REPO${RESET},\
+    ${CYAN}${UNDER}YML LAYER${RESET},\
+    ${CYAN}${UNDER}YML LAYERPATH${RESET},\
+    ,\
+    ${CYAN}${UNDER}BBL LAYER${RESET},\
+    ${CYAN}${UNDER}BBL LAYERPATH${RESET},\
+    ${CYAN}${UNDER}BBL PRIORITY${RESET}"
+    {
+        for r in $(yq -o tsv '.repos | keys' "$_KAS_YML"); do
+            # import repo members (yamlifiedrepoxml) into shell vars (path, url, branch, commit, layers_*)
+            . <(yq -o shell '.repos[strenv(r)]' "$_KAS_YML") 
+            export r
+            for l in $(yq -oj "$_KAS_YML" | jq 'try (.repos[env.r].layers | keys) // "no-layers"' \
+                | yq -pj -ot)
+            do
+                # does this repo exist in the generated bitbake build env?
+                if ! grep $r $BUILD_DIR/bb_layers_paths_priorities.txt > grepout; then
+                    printf "%s\t%s\t%s\t|\t%s\t%s\t%s\n" "${RED}✘${RESET}$r" "$l" "n/A" "n/A" "n/A" "n/A"
+                    echo "$r" >> rfile
+                else
+                    if grep -E "$l[[:space:]]" grepout > moregrepout; then
+                        read -r layer_name layer_path layer_priority < moregrepout
+                        SD="$ROOT_DIR/$SOURCE_DIR/"
+                        layer_path="${layer_path#"$SD"}"
+                        export l
+                        export lp=$(yq '.repos[env(r)].layers[env(l)]["path"]' "$_KAS_YML")
+                        printf "%s\t%s\t%s\t|\t%s\t%s\t%s\n" "${GREEN}✓${RESET}$r" "$l" "${lp}" "$layer_name" "$layer_path" "$layer_priority"
+                    fi
+                fi
+            done
+        done
+    } | column --table --output-width 120 --table-columns "$HDRS" \
+    | sed 's/^/    /'
+    rm *grepout
 }
+
+compare_layers
+printf "\nRemoving Repos missing in the bitbake environment\n"
+export rr
+while read -r rr; do
+    yq -i 'del(.repos[env(rr)])' "$_KAS_YML"
+    printf "    Removed %s\n" "$rr"
+done <rfile
+rm rfile
+compare_layers
+
+
+# step "TODO: Validating kas yml against build environment.."
+# 
+# step "TODO: Injecting super-repo origin into $_KAS_YML.."
+
+
+
 
 # DEPRECATED
 # Old impl just translated repo xml into kas config yml format.
@@ -178,6 +245,8 @@ function kashdr() {
 # the ultimate user configuration for the yocto project is generated
 # by procedural shell scripts, and cannot be generated from structured
 # data alone.
+export REPO_MANIFEST_JSON="${_REPO_MANIFEST_FILENAME%.*}.json"
+export REPO_MANIFEST_KAS_JSON="${_REPO_MANIFEST_FILENAME%.*}.kas.json"
 function xml2yml() {
     printf "Converting repo XML manifest '%s' to json at '%s'...\n" "${REPO_MANIFEST_XML}" "${REPO_MANIFEST_JSON}"
     yq -p=xml -o=json --xml-attribute-prefix '' --xml-skip-proc-inst "$REPO_MANIFEST_XML" > "$REPO_MANIFEST_JSON"
@@ -247,8 +316,8 @@ function xml2yml() {
     # verbose && echo && jq . "$REPO_MANIFEST_KAS_JSON"
     
     printf "Converting KAS configuration JSON to YAML (technically unnecessary since kas supports json)...\n" "$REPO_MANIFEST_KAS_JSON"
-    yq -p=json -o=yaml "$REPO_MANIFEST_KAS_JSON" > "$KAS_YML"
+    yq -p=json -o=yaml "$REPO_MANIFEST_KAS_JSON" > "$_KAS_YML"
 
-    printf "${GREEN}SUCCESS${RESET}fully converted repo manifest xml %s into kas config yaml %s\n" "$REPO_MANIFEST_XML" "$KAS_YML"
-    # verbose && yq . "$KAS_YML"
+    printf "${GREEN}SUCCESS${RESET}fully converted repo manifest xml %s into kas config yaml %s\n" "$REPO_MANIFEST_XML" "$_KAS_YML"
+    # verbose && yq . "$_KAS_YML"
 }
